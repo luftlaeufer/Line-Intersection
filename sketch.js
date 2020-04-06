@@ -24,7 +24,7 @@ function draw() {
         lines.push(new Line(random(width), random(height), index));
     }
 
-    lines.forEach((line) => {
+    lines.forEach((line, index) => {
         line.update();
         line.intersects(lines);
         line.edges();
@@ -34,8 +34,12 @@ function draw() {
 }
 
 function mousePressed() {
-    index++;
-    lines.push(new Line(mouseX, mouseY, index));
+    for (let i = 0; i < 2; i++) {
+        index++;
+        let shakeX = random(-10, 10);
+        let shakeY = random(-10, 10);
+        lines.push(new Line(mouseX + shakeX, mouseY + shakeY, index));
+    }
 }
 
 function Line(x, y, index) {
@@ -49,7 +53,7 @@ function Line(x, y, index) {
     this.endMove = this.startMove.copy();
     this.color = color(200, 200, 200);
     this.finalColor = random(170, 255);
-    this.randomSW = random(2, 3); //random strokeWeight
+    this.randomSW = random(2, 4); //random strokeWeight
 
     this.update = function () {
         this.start.add(this.startMove);
