@@ -70,10 +70,10 @@ function Line(x, y, index) {
                 if (this.hit.x || this.hit.y) {
 
                     if (this.firstHit == true) {
-                        this.startMove.mult(0);
+                        this.startMove.mult(0); //stop the moving vector
                     }
                     if (this.secondHit == true) {
-                        this.endMove.mult(0);
+                        this.endMove.mult(0); //stop the moving vector
                         this.color = color(this.finalColor, 127, 0);
                     }
                 }
