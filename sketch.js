@@ -63,7 +63,6 @@ function Line(x, y, index) {
         for (let i = 0; i < otherLines.length; i++) {
             if (this.id != i) { //dont do the check if it is looking at itself
 
-                //this.hit = collideLineLine(this.start.x, this.start.y, this.end.x, this.end.y, otherLines[i].start.x, otherLines[i].start.y, otherLines[i].end.x, otherLines[i].end.y, this.hit); //colliding with anything?
                 this.hit = collideLineLine(this.start.x, this.start.y, this.end.x, this.end.y, otherLines[i].start.x, otherLines[i].start.y, otherLines[i].end.x, otherLines[i].end.y, this.hit); //colliding with anything?
                 this.firstHit = collidePointLine(this.start.x, this.start.y, otherLines[i].start.x, otherLines[i].start.y, otherLines[i].end.x, otherLines[i].end.y); //start collision
                 this.secondHit = collidePointLine(this.end.x, this.end.y, otherLines[i].start.x, otherLines[i].start.y, otherLines[i].end.x, otherLines[i].end.y); //end collision
@@ -72,7 +71,6 @@ function Line(x, y, index) {
 
                     if (this.firstHit == true) {
                         this.startMove.mult(0);
-                        this.color = color(this.finalColor, 127, 0);
                     }
                     if (this.secondHit == true) {
                         this.endMove.mult(0);
