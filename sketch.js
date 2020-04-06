@@ -21,16 +21,14 @@ function draw() {
     //create new lines until limit is reached
     if (lines.length < limit) {
         index++;
-        lines.push(new Line(random(-worldLimitX, width + worldLimitX), random(-worldLimitY, height + worldLimitY), index));
+        lines.push(new Line(random(width), random(height), index));
     }
 
-    lines.forEach((line, index) => {
+    lines.forEach((line) => {
         line.update();
         line.intersects(lines);
+        line.edges();
         line.show();
-        if (line.edges()) {
-            lines.splice(index, 1);
-        }
     });
 
 }
@@ -87,14 +85,16 @@ function Line(x, y, index) {
     }
 
     this.edges = function () {
-        if (this.end.x > width + worldLimitX || this.end.x < -worldLimitX) {
-            return true;
+
+        if (this.start.x > width || this.start.y > height || this.start.x < 0 || this.start.y < 0) {
+            this.startMove.mult(0);
+            this.color = color(this.finalColor, 127, 0);
         }
-        if (this.end.y > height + worldLimitY || this.end.y < -worldLimitY) {
-            return true;
+
+        if (this.end.x > width || this.end.y > height || this.end.x < 0 || this.end.y < 0) {
+            this.endMove.mult(0);
+            this.color = color(this.finalColor, 127, 0);
         }
-        else {
-            return false;
-        }
+
     }
 }
