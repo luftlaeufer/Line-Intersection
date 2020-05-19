@@ -3,6 +3,13 @@ let index = 0; //is needed, so the line doesn’t check against itself
 let limit = 128; //max lines
 let worldLimitX = window.innerWidth * 0.1;
 let worldLimitY = window.innerHeight * 0.1;
+var direction = "random";
+let img;
+let mapVisable = false;
+
+function preload() {
+    img = loadImage('map.png');
+}
 
 function windowResized() {
     resizeCanvas(windowWidth, windowHeight);
@@ -17,12 +24,17 @@ function setup() {
 
 function draw() {
     background(50);
+    if (mapVisable) {
+        image(img, 0, 0, width, height);
+    }
 
     //create new lines until limit is reached
-    if (lines.length < limit) {
-        index++;
-        lines.push(new Line(random(width), random(height), index));
-    }
+    /*     if (mouseIsPressed) {
+            if (lines.length < limit) {
+                index++;
+                lines.push(new Line(mouseX, mouseY, index));
+            }
+        } */
 
     lines.forEach((line, index) => {
         line.update();
@@ -34,22 +46,50 @@ function draw() {
 }
 
 function mousePressed() {
-    for (let i = 0; i < 2; i++) {
-        index++;
-        let shakeX = random(-10, 10);
-        let shakeY = random(-10, 10);
-        lines.push(new Line(mouseX + shakeX, mouseY + shakeY, index));
-    }
+    index++;
+    lines.push(new Line(mouseX, mouseY, index, direction));
 }
 
-function Line(x, y, index) {
+function keyPressed() {
+    switch (key) {
+        case "1":
+            direction = "horizontal"
+            break;
+        case "2":
+            direction = "vertical"
+            break;
+        case "3":
+            direction = "random"
+            break;
+        case "4":
+            mapVisable = !mapVisable;
+            break;
+        case "5":
+            save(`Image-${frameCount}.jpg`);
+    }
+    console.log(direction);
+}
+
+function Line(x, y, index, direction) {
 
     this.id = index;
     this.hit = true; // calculated intersection point from first Line-Line-hit
 
     this.start = createVector(x, y);
     this.end = createVector(x, y);
-    this.startMove = p5.Vector.random2D().mult(random(1, 2));
+
+    if (direction == "random") {
+        this.startMove = p5.Vector.random2D().mult(random(1, 2));
+    }
+
+    if (direction == "vertical") {
+        this.startMove = createVector(0, 1);
+    }
+    if (direction == "horizontal") {
+        this.startMove = createVector(1, 0);
+    }
+
+    // this.startMove = createVector(0, 1);
     this.endMove = this.startMove.copy();
     this.color = color(200, 200, 200);
     this.finalColor = random(170, 255);
