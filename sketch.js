@@ -1,14 +1,21 @@
 let lines = [];
+let sprites = []
 let index = 0; //is needed, so the line doesn’t check against itself
 let limit = 128; //max lines
+let spriteLimit = limit / 8;
 let worldLimitX = window.innerWidth * 0.1;
 let worldLimitY = window.innerHeight * 0.1;
 var direction = "random";
-let img;
-let mapVisable = false;
+let mapImage;
+let mapVisable, showCircles = false;
+let spriteImages = [];
 
 function preload() {
-    img = loadImage('map.png');
+    mapImage = loadImage('map.png');
+    for (let i = 0; i < 5; i++) {
+        let sprite_url = `sprites/sprite_${i}.png`;
+        spriteImages[i] = loadImage(sprite_url);
+    }
 }
 
 function windowResized() {
@@ -16,38 +23,87 @@ function windowResized() {
 }
 
 function setup() {
-    let canvas = createCanvas(windowWidth, windowHeight, P2D);
-    canvas.parent('sketch-holder');
+    createCanvas(windowWidth, windowHeight);
     strokeCap(SQUARE);
     cursor(CROSS);
+
+    mapImage.loadPixels();
+    let imageRes = 2;
+    for (let x = 0; x < mapImage.width; x += imageRes) {
+        for (let y = 0; y < mapImage.height; y += imageRes) {
+
+            let chance = random(1);
+
+            if (chance < 0.5) {
+                let pixelIndex = x + y * mapImage.width;
+                let imageColor = brightness(color(mapImage.pixels[pixelIndex]));
+
+                if (imageColor == 0) {
+
+                    //create new lines until limit is reached
+                    if (lines.length < limit) {
+
+                        index++;
+
+                        let directionDice = int(random(3));
+
+                        if (directionDice == 0) {
+                            direction = "horizontal";
+                        }
+                        if (directionDice == 1) {
+                            direction = "vertical";
+                        }
+                        if (directionDice == 2) {
+                            direction = "random"
+                        }
+
+                        //console.log(direction);
+                        lines.push(new Line(random(width), random(height), index, direction));
+                        direction = "random";
+
+                    }
+                }
+            }
+        }
+    }
+
+    // create sprites
+    for (let i = 0; i < spriteLimit; i++) {
+        let s = new Sprite(random(width), random(height), i, 20);
+        sprites.push(s);
+    }
+
 }
 
 function draw() {
-    background(50);
-    if (mapVisable) {
-        image(img, 0, 0, width, height);
-    }
 
-    //create new lines until limit is reached
-    /*     if (mouseIsPressed) {
-            if (lines.length < limit) {
-                index++;
-                lines.push(new Line(mouseX, mouseY, index));
-            }
-        } */
+    background("#6500F9");
+
+    if (mapVisable) {
+        image(mapImage, 0, 0, width, height);
+    }
 
     lines.forEach((line, index) => {
         line.update();
         line.intersects(lines);
         line.edges();
-        line.show();
-    });
+        line.show(index);
+    })
+
+    sprites.forEach(sprite => {
+        sprite.overlap(sprites);
+        sprite.show();
+    })
 
 }
 
 function mousePressed() {
     index++;
     lines.push(new Line(mouseX, mouseY, index, direction));
+}
+
+function mouseWheel(event) {
+    return false;
 }
 
 function keyPressed() {
@@ -64,11 +120,41 @@ function keyPressed() {
         case "4":
             mapVisable = !mapVisable;
             break;
-        case "5":
+        case "s":
             save(`Image-${frameCount}.jpg`);
+            break;
+        case "c":
+            showCircles = !showCircles;
+            break;
     }
     console.log(direction);
 }
+
+
+function Sprite(x, y, id, size) {
+    this.location = createVector(x, y);
+    this.id = id;
+    this.size = size;
+    this.sprite = int(random(spriteImages.length));
+
+    this.show = function () {
+        image(spriteImages[this.sprite], this.location.x, this.location.y, this.size, this.size);
+    }
+
+    this.overlap = function (otherSprites) {
+        for (let i = 0; i < otherSprites.length; i++) {
+            if (this.id != i) {
+                this.hit = collideCircleCircle(this.location.x, this.location.y, this.size * 2, otherSprites[i].location.x, otherSprites[i].location.y, otherSprites[i].size * 2);
+
+                if (this.hit == true) {
+                    this.location.x = random(width);
+                    this.location.y = random(height);
+                }
+            }
+        }
+    }
+}
+
 
 function Line(x, y, index, direction) {
 
@@ -89,11 +175,10 @@ function Line(x, y, index, direction) {
         this.startMove = createVector(1, 0);
     }
 
-    // this.startMove = createVector(0, 1);
     this.endMove = this.startMove.copy();
-    this.color = color(200, 200, 200);
-    this.finalColor = random(170, 255);
-    this.randomSW = random(2, 4); //random strokeWeight
+    this.color = random(255);
+    this.finalColor = random(-50, 50);
+    this.randomSW = int(random(2, 4)); //random strokeWeight
 
     this.update = function () {
         this.start.add(this.startMove);
@@ -116,28 +201,37 @@ function Line(x, y, index, direction) {
                     }
                     if (this.secondHit == true) {
                         this.endMove.mult(0); //stop the moving vector
-                        this.color = color(this.finalColor, 127, 0);
+                        this.color = color(107, 227 - this.finalColor, 251);
                     }
                 }
             }
         }
     }
-    this.show = function () {
+
+    this.show = function (i) {
         stroke(this.color);
+        let vibrate = map(noise(frameCount * 0.01, i), 0, 1, 0, mouseX * 0.1);
+
+        if (showCircles) {
+            noFill();
+            ellipse(this.start.x, this.start.y, vibrate, vibrate);
+        }
+
         strokeWeight(this.randomSW);
         line(this.start.x, this.start.y, this.end.x, this.end.y);
+
     }
 
     this.edges = function () {
 
         if (this.start.x > width || this.start.y > height || this.start.x < 0 || this.start.y < 0) {
             this.startMove.mult(0);
-            this.color = color(this.finalColor, 127, 0);
+            this.color = color(107 - this.finalColor, 227, 251);
         }
 
         if (this.end.x > width || this.end.y > height || this.end.x < 0 || this.end.y < 0) {
             this.endMove.mult(0);
-            this.color = color(this.finalColor, 127, 0);
+            this.color = color(107, 227, 251 - this.finalColor);
         }
 
     }
