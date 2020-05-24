@@ -26,6 +26,7 @@ function setup() {
     createCanvas(windowWidth, windowHeight);
     strokeCap(SQUARE);
     cursor(CROSS);
+    imageMode(CENTER);
 
     mapImage.loadPixels();
     let imageRes = 2;
@@ -91,8 +92,9 @@ function draw() {
         line.show(index);
     })
 
-    sprites.forEach(sprite => {
+    sprites.forEach((sprite, index) => {
         sprite.overlap(sprites);
+        sprite.pumping(index);
         sprite.show();
     })
 
@@ -137,6 +139,10 @@ function Sprite(x, y, id, size) {
     this.id = id;
     this.size = size;
     this.sprite = int(random(spriteImages.length));
+
+    this.pumping = function (i) {
+        this.size = map(noise(frameCount * 0.01, i), 0, 1, 0, 40);
+    }
 
     this.show = function () {
         image(spriteImages[this.sprite], this.location.x, this.location.y, this.size, this.size);
