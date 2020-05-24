@@ -85,6 +85,7 @@ function draw() {
 
     lines.forEach((line, index) => {
         line.update();
+        line.hitsSprite(sprites);
         line.intersects(lines);
         line.edges();
         line.show(index);
@@ -183,6 +184,21 @@ function Line(x, y, index, direction) {
     this.update = function () {
         this.start.add(this.startMove);
         this.end.sub(this.endMove);
+    }
+
+    this.hitsSprite = function (sprites) {
+        for (let i = 0; i < sprites.length; i++) {
+            this.firstHit = collidePointEllipse(this.start.x, this.start.y, sprites[i].location.x, sprites[i].location.y, sprites[i].size * 2, sprites[i].size * 2);
+            this.secondHit = collidePointEllipse(this.end.x, this.end.y, sprites[i].location.x, sprites[i].location.y, sprites[i].size * 2, sprites[i].size * 2);
+
+            if (this.firstHit == true) {
+                this.startMove.mult(0);
+            }
+            if (this.secondHit == true) {
+                this.endMove.mult(0); //stop the moving vector
+                this.color = color(107, 227 - this.finalColor, 251);
+            }
+        }
     }
 
     this.intersects = function (otherLines) {
