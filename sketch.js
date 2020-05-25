@@ -1,6 +1,8 @@
 let lines = [];
-let sprites = []
+let sprites = [];
+let mapDots = [];
 let index = 0; //is needed, so the line doesn’t check against itself
+let dotID = 0;
 let limit = 128; //max lines
 let spriteLimit = limit / 8;
 let worldLimitX = window.innerWidth * 0.1;
@@ -23,49 +25,45 @@ function windowResized() {
 }
 
 function setup() {
-    createCanvas(windowWidth, windowHeight);
-    strokeCap(SQUARE);
+    createCanvas(windowWidth, windowHeight, P2D);
     cursor(CROSS);
-    imageMode(CENTER);
 
     mapImage.loadPixels();
-    let imageRes = 2;
+    let imageRes = 1;
     for (let x = 0; x < mapImage.width; x += imageRes) {
         for (let y = 0; y < mapImage.height; y += imageRes) {
 
+            let pixelIndex = (x + y * mapImage.width) * 4;
+            let imageColor = int(brightness(color(mapImage.pixels[pixelIndex])));
+
             let chance = random(1);
-
-            if (chance < 0.5) {
-                let pixelIndex = x + y * mapImage.width;
-                let imageColor = brightness(color(mapImage.pixels[pixelIndex]));
-
-                if (imageColor == 0) {
-
-                    //create new lines until limit is reached
-                    if (lines.length < limit) {
-
-                        index++;
-
-                        let directionDice = int(random(3));
-
-                        if (directionDice == 0) {
-                            direction = "horizontal";
-                        }
-                        if (directionDice == 1) {
-                            direction = "vertical";
-                        }
-                        if (directionDice == 2) {
-                            direction = "random"
-                        }
-
-                        //console.log(direction);
-                        lines.push(new Line(random(width), random(height), index, direction));
-                        direction = "random";
-
-                    }
-                }
+            //black pixels on map
+            if (imageColor <= 10 && chance < 0.6) {
+                let dotX = floor(map(x, 0, mapImage.width, 0, width));
+                let dotY = floor(map(y, 0, mapImage.height, 0, height));
+                dotID++;
+                mapDots.push(new Dot(dotX, dotY, imageRes, dotID));
             }
         }
+    }
+
+    //create new lines until limit is reached
+    for (let i = 0; i < limit; i++) {
+
+        let directionDice = int(random(3));
+
+        if (directionDice == 0) {
+            direction = "horizontal";
+        }
+        if (directionDice == 1) {
+            direction = "vertical";
+        }
+        if (directionDice == 2) {
+            direction = "random"
+        }
+
+        lines.push(new Line(random(width), random(height), i, direction));
+        direction = "random";
     }
 
     // create sprites
@@ -73,7 +71,6 @@ function setup() {
         let s = new Sprite(random(width), random(height), i, 20);
         sprites.push(s);
     }
-
 }
 
 function draw() {
@@ -81,6 +78,8 @@ function draw() {
     background("#6500F9");
 
     if (mapVisable) {
+        imageMode(CORNERS);
+        tint(255, 50);
         image(mapImage, 0, 0, width, height);
     }
 
@@ -90,6 +89,10 @@ function draw() {
         line.intersects(lines);
         line.edges();
         line.show(index);
+    })
+
+    mapDots.forEach(dot => {
+        dot.show();
     })
 
     sprites.forEach((sprite, index) => {
@@ -130,9 +133,52 @@ function keyPressed() {
             showCircles = !showCircles;
             break;
     }
-    console.log(direction);
+    //console.log(direction);
 }
 
+
+function Dot(x, y, detail, id) {
+    this.loc = createVector(x, y);
+    this.angleDice = round(random(4));
+    this.rareLengthDice = random(1);
+
+    //set direction of small lines
+    if (this.angleDice == 0) {
+        this.randomAngle = radians(270);
+    }
+    if (this.angleDice == 1) {
+        this.randomAngle = radians(90);
+    }
+    if (this.angleDice == 2) {
+        this.randomAngle = radians(0);
+    }
+    if (this.angleDice == 3) {
+        this.randomAngle = radians(180);
+    }
+
+    this.detail = detail;
+
+    //some rare lines are longer and random
+    if (this.rareLengthDice < 0.002) {
+        this.offLength = random(this.detail * width / 4);
+        this.offSet = p5.Vector.fromAngle(this.randomAngle, this.offLength);
+    }
+    //normal lines
+    else {
+        this.offLength = random(this.detail * 16);
+        this.offSet = p5.Vector.fromAngle(this.randomAngle, this.offLength);
+    }
+
+    this.id = id;
+    this.sw = int(random(1, 2));
+
+    this.show = function () {
+        stroke('#71E4FB');
+        strokeWeight(this.sw);
+        strokeCap(PROJECT);
+        line(this.loc.x, this.loc.y, this.loc.x + this.offSet.x, this.loc.y + this.offSet.y);
+    }
+}
 
 function Sprite(x, y, id, size) {
     this.location = createVector(x, y);
@@ -145,6 +191,13 @@ function Sprite(x, y, id, size) {
     }
 
     this.show = function () {
+
+        //buffer zone around sprite
+        noStroke();
+        fill('#6500F9');
+        ellipse(this.location.x, this.location.y, this.size * 1.5, this.size * 1.5);
+
+        imageMode(CENTER);
         image(spriteImages[this.sprite], this.location.x, this.location.y, this.size, this.size);
     }
 
@@ -184,8 +237,9 @@ function Line(x, y, index, direction) {
 
     this.endMove = this.startMove.copy();
     this.color = random(255);
-    this.finalColor = random(-50, 50);
-    this.randomSW = int(random(2, 4)); //random strokeWeight
+    this.finalColor = '#71E4FB'
+    //this.randomSW = int(random(2, 4)); //random strokeWeight
+    this.randomSW = 1; //random strokeWeight
 
     this.update = function () {
         this.start.add(this.startMove);
@@ -202,7 +256,7 @@ function Line(x, y, index, direction) {
             }
             if (this.secondHit == true) {
                 this.endMove.mult(0); //stop the moving vector
-                this.color = color(107, 227 - this.finalColor, 251);
+                this.color = this.finalColor;
             }
         }
     }
@@ -223,7 +277,7 @@ function Line(x, y, index, direction) {
                     }
                     if (this.secondHit == true) {
                         this.endMove.mult(0); //stop the moving vector
-                        this.color = color(107, 227 - this.finalColor, 251);
+                        this.color = this.finalColor;
                     }
                 }
             }
@@ -248,12 +302,12 @@ function Line(x, y, index, direction) {
 
         if (this.start.x > width || this.start.y > height || this.start.x < 0 || this.start.y < 0) {
             this.startMove.mult(0);
-            this.color = color(107 - this.finalColor, 227, 251);
+            this.color = this.finalColor;
         }
 
         if (this.end.x > width || this.end.y > height || this.end.x < 0 || this.end.y < 0) {
             this.endMove.mult(0);
-            this.color = color(107, 227, 251 - this.finalColor);
+            this.color = this.finalColor;
         }
 
     }
